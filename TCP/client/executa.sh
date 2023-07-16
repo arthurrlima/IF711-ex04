@@ -1,6 +1,6 @@
 go build client.go
 
-for i in {1..30}
+for i in {1..10}
 do
    ./client &
 done

@@ -13,14 +13,12 @@ import (
 const (
 	ServerHost = "localhost"
 	ServerPort = "1313"
-	ServerType = "tcp"
 	BUFFERSIZE = 1024
 )
 
 func main() {
-
 	// estabelece conexão
-	conn, err := net.Dial(ServerType, ServerHost+":"+ServerPort)
+	conn, err := net.Dial("tcp", ServerHost+":"+ServerPort)
 	if err != nil {
 		panic(err)
 	}
@@ -39,7 +37,6 @@ func main() {
 
 	// fecha conexão
 	defer conn.Close()
-
 }
 
 func sendFileToClient(conn net.Conn) {
@@ -62,6 +59,7 @@ func sendFileToClient(conn net.Conn) {
 	fmt.Println("Enviando nome e tamanho do arquivo!")
 
 	_, err = conn.Write([]byte(fileSize))
+
 	if err != nil {
 		fmt.Println("Erro no envio do tamanho do arquivo para o servidor:", err.Error())
 	}
@@ -85,14 +83,14 @@ func sendFileToClient(conn net.Conn) {
 
 }
 
-func fillString(retunString string, toLength int) string {
+func fillString(returnString string, toLength int) string {
 	for {
-		lengtString := len(retunString)
-		if lengtString < toLength {
-			retunString = retunString + ":"
+		lengthString := len(returnString)
+		if lengthString < toLength {
+			returnString = returnString + ":"
 			continue
 		}
 		break
 	}
-	return retunString
+	return returnString
 }

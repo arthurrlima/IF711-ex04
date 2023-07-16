@@ -17,12 +17,6 @@ const (
 )
 
 func main() {
-	ServerTCP()
-	//ServerUDP()
-}
-
-func ServerTCP() {
-
 	fmt.Println("Servidor em execução...")
 
 	server, err := net.Listen("tcp", ServerHost+":"+ServerPort)
@@ -45,32 +39,6 @@ func ServerTCP() {
 		fmt.Println("Cliente conectado")
 
 		// cria thread para o cliente
-		go processRequestBytes(conn)
-	}
-}
-
-func ServerUDP() {
-	// resolve server address
-	addr, err := net.ResolveUDPAddr("udp", ":"+ServerPort)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(0)
-	}
-
-	// listen on udp port
-	conn, err := net.ListenUDP("udp", addr)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(0)
-	}
-
-	// close conn
-	defer conn.Close()
-
-	fmt.Println("Servidor UDP aguardando requests...")
-
-	for {
-		// handle request
 		go processRequestBytes(conn)
 	}
 }
