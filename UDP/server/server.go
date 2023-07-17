@@ -59,6 +59,7 @@ func main() {
 func processRequestBytes(conn *net.UDPConn, msgFromClient []byte, n int, addr *net.UDPAddr) {
 	bufferFileSize := msgFromClient[:10]
 	bufferFileName := msgFromClient[10:74]
+	bufferFileContent := msgFromClient[74:]
 
 	// Le o tamanho do arquivo
 	fileSize, _ := strconv.ParseInt(strings.Trim(string(bufferFileSize), ":"), 10, 64)
@@ -68,8 +69,11 @@ func processRequestBytes(conn *net.UDPConn, msgFromClient []byte, n int, addr *n
 
 	fmt.Println("Recebendo arquivo " + fileName + " de tamanho " + strconv.FormatInt(fileSize, 10) + " bytes")
 
+	// File content
+	fmt.Println(bufferFileContent)
+
 	timestamp := time.Now().Format("20060102150405.000000")
-	uniqueFileName := timestamp + "_" + fileName
+	uniqueFileName := string(timestamp[15:]) + fileName
 
 	newFile, err := os.Create("files/" + sanitizeFileName(uniqueFileName))
 	if err != nil {
@@ -78,32 +82,8 @@ func processRequestBytes(conn *net.UDPConn, msgFromClient []byte, n int, addr *n
 
 	fmt.Println("Enviando dados do arquivo!")
 	defer newFile.Close()
-	var receivedBytes int64
 
-	for {
-		if (fileSize - receivedBytes) < BUFFERSIZE {
-			remainingBufferSize := fileSize - receivedBytes
-			if remainingBufferSize <= 0 {
-				break
-			}
-			remainingBuffer := make([]byte, remainingBufferSize)
-			n, _, err := conn.ReadFromUDP(remainingBuffer)
-			if err != nil {
-				fmt.Println("Failed to read UDP packet:", err)
-				break
-			}
-			newFile.Write(remainingBuffer[:n])
-			receivedBytes += int64(n)
-			break
-		}
-		n, _, err := conn.ReadFromUDP(msgFromClient)
-		if err != nil {
-			fmt.Println("Failed to read UDP packet:", err)
-			break
-		}
-		newFile.Write(msgFromClient[:n])
-		receivedBytes += BUFFERSIZE
-	}
+	newFile.Write(bufferFileContent)
 
 	_, err = conn.WriteToUDP([]byte("Servidor: Arquivo recebido com sucesso!\n"), addr)
 	if err != nil {

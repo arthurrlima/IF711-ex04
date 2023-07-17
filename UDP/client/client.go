@@ -2,11 +2,13 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"net"
 	"os"
 	"strconv"
+	"time"
 )
 
 const (
@@ -32,6 +34,7 @@ func main() {
 	}
 
 	// envia dado
+	time.Sleep(21)
 	sendFileToServer(conn)
 
 	// recebe resposta do servidor
@@ -65,25 +68,29 @@ func sendFileToServer(conn *net.UDPConn) {
 	fileName := fillString(fileInfo.Name(), 64)
 
 	fmt.Println("Enviando nome e tamanho do arquivo!")
-
-	_, err = conn.Write([]byte(fileSize + fileName))
-	if err != nil {
-		fmt.Println("Erro no envio do tamanho e nome do arquivo para o servidor:", err.Error())
-		return
-	}
+	fmt.Println(fileName + ", " + fileSize)
 
 	sendBuffer := make([]byte, BUFFERSIZE)
 	fmt.Println("Início do upload do arquivo!")
+	var bufferString string
 
 	for {
 		n, err := file.Read(sendBuffer)
 		if err == io.EOF {
 			break
 		}
-		conn.Write(sendBuffer[:n])
+		fmt.Println(bytes.NewBuffer(sendBuffer[:n]).String())
+		bufferString = bytes.NewBuffer(sendBuffer[:n]).String()
+
 	}
 
-	fmt.Println("O upload do arquivo foi concluído! Fechando conexão...")
+	_, err = conn.Write([]byte(fileSize + fileName + bufferString))
+	if err != nil {
+		fmt.Println("Erro no envio do tamanho e nome do arquivo para o servidor:", err.Error())
+		return
+	}
+
+	fmt.Println("O upload do arquivo foi concluído! Fechando conexão..." + "filesize: " + fileSize)
 }
 
 func fillString(returnString string, toLength int) string {
