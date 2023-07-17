@@ -3,7 +3,6 @@ package main
 
 import (
 	"bytes"
-	"encoding/csv"
 	"fmt"
 	"io"
 	"net"
@@ -19,49 +18,35 @@ const (
 )
 
 func main() {
-
-	for n := 0; n < 1000; n++ {
-		start := time.Now()
-		rep := make([]byte, 1024)
-		// retorna o endereço do endpoint UDP
-		addr, err := net.ResolveUDPAddr("udp", ServerHost+":"+ServerPort)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(0)
-		}
-
-		// conecta ao servidor -- não cria uma conexão
-		conn, err := net.DialUDP("udp", nil, addr)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(0)
-		}
-
-		// envia dado
-		sendFileToServer(conn)
-
-		// recebe resposta do servidor
-		_, test, err := conn.ReadFromUDP(rep)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(0)
-		}
-
-		fmt.Println(test, " -> ", string(rep))
-		// fecha conexão
-		defer conn.Close()
-
-		end := time.Since(start)
-		record := []string{strconv.FormatInt(end.Milliseconds(), 10)}
-
-		f, err := os.OpenFile("runlog.csv", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-		defer f.Close()
-
-		w := csv.NewWriter(f)
-		defer w.Flush()
-
-		w.Write(record)
+	rep := make([]byte, 1024)
+	// retorna o endereço do endpoint UDP
+	addr, err := net.ResolveUDPAddr("udp", ServerHost+":"+ServerPort)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(0)
 	}
+
+	// conecta ao servidor -- não cria uma conexão
+	conn, err := net.DialUDP("udp", nil, addr)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(0)
+	}
+
+	// envia dado
+	time.Sleep(21)
+	sendFileToServer(conn)
+
+	// recebe resposta do servidor
+	_, test, err := conn.ReadFromUDP(rep)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(0)
+	}
+
+	fmt.Println(test, " -> ", string(rep))
+	// fecha conexão
+	defer conn.Close()
 }
 
 func sendFileToServer(conn *net.UDPConn) {

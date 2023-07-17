@@ -3,13 +3,11 @@ package main
 
 import (
 	"bufio"
-	"encoding/csv"
 	"fmt"
 	"io"
 	"net"
 	"os"
 	"strconv"
-	"time"
 )
 
 const (
@@ -21,7 +19,6 @@ const (
 func main() {
 
 	for n := 0; n < 1000; n++ {
-		start := time.Now()
 
 		// estabelece conexão
 		conn, err := net.Dial("tcp", ServerHost+":"+ServerPort)
@@ -40,17 +37,6 @@ func main() {
 		}
 
 		fmt.Print(rep)
-
-		end := time.Since(start)
-		record := []string{strconv.FormatInt(end.Milliseconds(), 10)}
-
-		f, err := os.OpenFile("runlog.csv", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-		defer f.Close()
-
-		w := csv.NewWriter(f)
-		defer w.Flush()
-
-		w.Write(record)
 
 		// fecha conexão
 		defer conn.Close()
