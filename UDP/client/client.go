@@ -20,25 +20,38 @@ const (
 
 func main() {
 
+	if len(os.Args) < 2 {
+		fmt.Println("Usage: ./client <value>")
+		return
+	}
+
+	arg := os.Args[1]
+	value, err := strconv.Atoi(arg)
+	if err != nil {
+		fmt.Println("Invalid argument:", err)
+		return
+	}
+
+	// retorna o endereço do endpoint UDP
+	addr, err := net.ResolveUDPAddr("udp", ServerHost+":"+ServerPort)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(0)
+	}
+
+	// conecta ao servidor -- não cria uma conexão
+	conn, err := net.DialUDP("udp", nil, addr)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(0)
+	}
+
 	for n := 0; n < 1000; n++ {
 		start := time.Now()
 		rep := make([]byte, 1024)
-		// retorna o endereço do endpoint UDP
-		addr, err := net.ResolveUDPAddr("udp", ServerHost+":"+ServerPort)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(0)
-		}
-
-		// conecta ao servidor -- não cria uma conexão
-		conn, err := net.DialUDP("udp", nil, addr)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(0)
-		}
 
 		// envia dado
-		sendFileToServer(conn)
+		sendFileToServer(conn, value)
 
 		// recebe resposta do servidor
 		_, test, err := conn.ReadFromUDP(rep)
@@ -48,8 +61,6 @@ func main() {
 		}
 
 		fmt.Println(test, " -> ", string(rep))
-		// fecha conexão
-		defer conn.Close()
 
 		end := time.Since(start)
 		record := []string{strconv.FormatInt(end.Milliseconds(), 10)}
@@ -62,9 +73,12 @@ func main() {
 
 		w.Write(record)
 	}
+
+	// fecha conexão
+	defer conn.Close()
 }
 
-func sendFileToServer(conn *net.UDPConn) {
+func sendFileToServer(conn *net.UDPConn, value int) {
 	file, err := os.Open("arquivo.txt")
 
 	if err != nil {
@@ -80,10 +94,11 @@ func sendFileToServer(conn *net.UDPConn) {
 	}
 
 	fileSize := fillString(strconv.FormatInt(fileInfo.Size(), 10), 10)
-	fileName := fillString(fileInfo.Name(), 64)
+	fileName := fillString(fileInfo.Name(), 54)
+	fileOrigin := fillString(strconv.FormatInt(int64(value), 10), 10)
 
 	fmt.Println("Enviando nome e tamanho do arquivo!")
-	fmt.Println(fileName + ", " + fileSize)
+	fmt.Println(fileOrigin + ", " + fileName + ", " + fileSize)
 
 	sendBuffer := make([]byte, BUFFERSIZE)
 	fmt.Println("Início do upload do arquivo!")
@@ -99,7 +114,7 @@ func sendFileToServer(conn *net.UDPConn) {
 
 	}
 
-	_, err = conn.Write([]byte(fileSize + fileName + bufferString))
+	_, err = conn.Write([]byte(fileSize + fileName + fileOrigin + bufferString))
 	if err != nil {
 		fmt.Println("Erro no envio do tamanho e nome do arquivo para o servidor:", err.Error())
 		return

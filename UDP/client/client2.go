@@ -8,7 +8,6 @@ import (
 	"net"
 	"os"
 	"strconv"
-	"time"
 )
 
 const (
@@ -18,7 +17,19 @@ const (
 )
 
 func main() {
-	rep := make([]byte, 1024)
+
+	if len(os.Args) < 2 {
+		fmt.Println("Usage: ./client <value>")
+		return
+	}
+
+	arg := os.Args[1]
+	value, err := strconv.Atoi(arg)
+	if err != nil {
+		fmt.Println("Invalid argument:", err)
+		return
+	}
+
 	// retorna o endereço do endpoint UDP
 	addr, err := net.ResolveUDPAddr("udp", ServerHost+":"+ServerPort)
 	if err != nil {
@@ -33,23 +44,27 @@ func main() {
 		os.Exit(0)
 	}
 
-	// envia dado
-	time.Sleep(21)
-	sendFileToServer(conn)
+	for n := 0; n < 1000; n++ {
+		rep := make([]byte, 1024)
 
-	// recebe resposta do servidor
-	_, test, err := conn.ReadFromUDP(rep)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(0)
+		// envia dado
+		sendFileToServer(conn, value)
+
+		// recebe resposta do servidor
+		_, test, err := conn.ReadFromUDP(rep)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(0)
+		}
+
+		fmt.Println(test, " -> ", string(rep))
 	}
 
-	fmt.Println(test, " -> ", string(rep))
 	// fecha conexão
 	defer conn.Close()
 }
 
-func sendFileToServer(conn *net.UDPConn) {
+func sendFileToServer(conn *net.UDPConn, value int) {
 	file, err := os.Open("arquivo.txt")
 
 	if err != nil {
@@ -66,9 +81,10 @@ func sendFileToServer(conn *net.UDPConn) {
 
 	fileSize := fillString(strconv.FormatInt(fileInfo.Size(), 10), 10)
 	fileName := fillString(fileInfo.Name(), 64)
+	fileOrigin := fillString(strconv.FormatInt(int64(value), 10), 10)
 
 	fmt.Println("Enviando nome e tamanho do arquivo!")
-	fmt.Println(fileName + ", " + fileSize)
+	fmt.Println(fileOrigin + ", " + fileName + ", " + fileSize)
 
 	sendBuffer := make([]byte, BUFFERSIZE)
 	fmt.Println("Início do upload do arquivo!")
@@ -84,7 +100,7 @@ func sendFileToServer(conn *net.UDPConn) {
 
 	}
 
-	_, err = conn.Write([]byte(fileSize + fileName + bufferString))
+	_, err = conn.Write([]byte(fileSize + fileName + fileOrigin + bufferString))
 	if err != nil {
 		fmt.Println("Erro no envio do tamanho e nome do arquivo para o servidor:", err.Error())
 		return
