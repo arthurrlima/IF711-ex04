@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/rpc"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -33,15 +34,15 @@ func (s *FileTransferService) ProcessRequestBytes(chunk FileChunk, reply *bool) 
 	timestamp := time.Now().Format("20060102150405.000000")
 	uniqueFileName := timestamp + "_" + chunk.FileInfo.Filename
 
-	outputPath := "files/" + uniqueFileName
-
-	outputFile, err := os.OpenFile(outputPath, os.O_WRONLY|os.O_CREATE, 0666)
+	newFile, err := os.Create("files/" + sanitizeFileName(uniqueFileName))
 	if err != nil {
-		return err
+		panic(err)
 	}
-	defer outputFile.Close()
 
-	_, err = outputFile.WriteAt(chunk.Data, chunk.Offset)
+	fmt.Println("Enviando dados do arquivo!")
+	defer newFile.Close()
+
+	_, err = newFile.WriteAt(chunk.Data, chunk.Offset)
 	if err != nil {
 		return err
 	}
@@ -80,4 +81,14 @@ func main() {
 		// cria thread para o cliente
 		go rpc.ServeConn(conn)
 	}
+}
+
+func sanitizeFileName(fileName string) string {
+	// Remove any invalid characters from the file name
+	invalidChars := []string{"\\", "/", ":", "*", "?", "\"", "<", ">", "|"}
+	for _, char := range invalidChars {
+		fileName = strings.ReplaceAll(fileName, char, "")
+	}
+
+	return fileName
 }
