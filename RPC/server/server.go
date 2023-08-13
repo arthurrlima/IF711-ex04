@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/rpc"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -18,6 +19,7 @@ const (
 type FileData struct {
 	Filename string
 	Size     string
+	Origin   int
 }
 type FileChunk struct {
 	FileInfo FileData
@@ -27,12 +29,15 @@ type FileChunk struct {
 
 type FileTransferService struct{}
 
+var fileCounter = 0
+
 func (s *FileTransferService) ProcessRequestBytes(chunk FileChunk, reply *string) error {
+	fileCounter++
 
 	fmt.Println("Recebendo arquivo " + chunk.FileInfo.Filename + " de tamanho " + chunk.FileInfo.Size + " bytes")
 
 	timestamp := time.Now().Format("20060102150405.000000")
-	uniqueFileName := timestamp + "_" + chunk.FileInfo.Filename
+	uniqueFileName := timestamp + "_" + strconv.FormatInt(int64(chunk.FileInfo.Origin), 10) + "_" + chunk.FileInfo.Filename
 
 	newFile, err := os.Create("files/" + sanitizeFileName(uniqueFileName))
 	if err != nil {

@@ -1,12 +1,13 @@
 go build client.go
+go build client2.go
 
-# for j in {1}
-# do
-#    ./client &
-# done
-
-for i in {1..5}
+for j in {1}
 do
-   ./client &
+   ./client2 20 &
 done
-read
+
+for i in {1..19}
+do
+   ./client $i &
+done
+wait

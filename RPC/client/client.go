@@ -18,6 +18,7 @@ const (
 type FileData struct {
 	Filename string
 	Size     string
+	Origin   int
 }
 
 type FileChunk struct {
@@ -28,43 +29,56 @@ type FileChunk struct {
 
 func main() {
 
-	// start := time.Now()
+	if len(os.Args) < 2 {
+		fmt.Println("Usage: ./client <value>")
+		return
+	}
+
+	arg := os.Args[1]
+	value, err := strconv.Atoi(arg)
+	if err != nil {
+		fmt.Println("Invalid argument:", err)
+		return
+	}
 
 	// estabelece conexão
 	conn, err := rpc.Dial("tcp", ServerHost+":"+ServerPort)
 	if err != nil {
 		panic(err)
 	}
+	// start := time.Now()
+	for n := 0; n < 1000; n++ {
 
-	// envia dado
-	sendFileToClient(conn)
+		// envia dado
+		sendFileToClient(conn, value)
 
-	// recebe resposta do servidor
-	// rep, err := bufio.NewReader(os.Stdin).ReadString('\n')
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	os.Exit(0)
-	// }
+		// recebe resposta do servidor
+		// rep, err := bufio.NewReader(os.Stdin).ReadString('\n')
+		// if err != nil {
+		// 	fmt.Println(err)
+		// 	os.Exit(0)
+		// }
 
-	// fmt.Print(rep)
+		// fmt.Print(rep)
 
-	// end := time.Since(start)
-	// record := []string{strconv.FormatInt(end.Milliseconds(), 10)}
+		// end := time.Since(start)
+		// record := []string{strconv.FormatInt(end.Milliseconds(), 10)}
 
-	// f, err := os.OpenFile("runlog.csv", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-	// defer f.Close()
+		// f, err := os.OpenFile("runlog.csv", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+		// defer f.Close()
 
-	// w := csv.NewWriter(f)
-	// defer w.Flush()
+		// w := csv.NewWriter(f)
+		// defer w.Flush()
 
-	// w.Write(record)
+		// w.Write(record)
 
-	// fecha conexão
+		// fecha conexão
+
+	}
 	defer conn.Close()
-
 }
 
-func sendFileToClient(conn *rpc.Client) {
+func sendFileToClient(conn *rpc.Client, value int) {
 
 	file, err := os.Open("arquivo.txt")
 	if err != nil {
@@ -83,6 +97,7 @@ func sendFileToClient(conn *rpc.Client) {
 
 	chunkSize := 1024 // Adjust chunk size as needed
 	chunkBuffer := make([]byte, chunkSize)
+	chunkOrigin := value
 
 	var offset int64
 
@@ -91,6 +106,7 @@ func sendFileToClient(conn *rpc.Client) {
 	fileData := FileData{
 		Filename: fileName,
 		Size:     fileSize,
+		Origin:   chunkOrigin,
 	}
 
 	inputFile, err := os.Open("arquivo.txt")
@@ -125,7 +141,6 @@ func sendFileToClient(conn *rpc.Client) {
 	fmt.Println("O upload do arquivo foi concluido! Fechando conexão...")
 
 }
-
 func fillString(returnString string, toLength int) string {
 	for {
 		lengthString := len(returnString)
