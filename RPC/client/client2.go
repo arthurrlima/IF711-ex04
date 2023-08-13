@@ -55,15 +55,6 @@ func main() {
 		// envia dado
 		sendFileToClient(conn, value)
 
-		// recebe resposta do servidor
-		// rep, err := bufio.NewReader(os.Stdin).ReadString('\n')
-		// if err != nil {
-		// 	fmt.Println(err)
-		// 	os.Exit(0)
-		// }
-
-		// fmt.Print(rep)
-
 		end := time.Since(start)
 		record := []string{strconv.FormatInt(end.Milliseconds(), 10)}
 

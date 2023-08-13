@@ -17,14 +17,13 @@ const (
 )
 
 func main() {
+	// estabelece conexão
+	conn, err := net.Dial("tcp", ServerHost+":"+ServerPort)
+	if err != nil {
+		panic(err)
+	}
 
 	for n := 0; n < 1000; n++ {
-
-		// estabelece conexão
-		conn, err := net.Dial("tcp", ServerHost+":"+ServerPort)
-		if err != nil {
-			panic(err)
-		}
 
 		// envia dado
 		sendFileToClient(conn)
@@ -38,9 +37,10 @@ func main() {
 
 		fmt.Print(rep)
 
-		// fecha conexão
-		defer conn.Close()
 	}
+
+	// fecha conexão
+	defer conn.Close()
 }
 
 func sendFileToClient(conn net.Conn) {

@@ -58,7 +58,8 @@ func main() {
 
 func processRequestBytes(conn *net.UDPConn, msgFromClient []byte, n int, addr *net.UDPAddr) {
 	bufferFileSize := msgFromClient[:10]
-	bufferFileName := msgFromClient[10:74]
+	bufferFileName := msgFromClient[10:64]
+	bufferFileOrigin := msgFromClient[64:74]
 	bufferFileContent := msgFromClient[74:]
 
 	// Le o tamanho do arquivo
@@ -67,13 +68,13 @@ func processRequestBytes(conn *net.UDPConn, msgFromClient []byte, n int, addr *n
 	// Le o nome do arquivo
 	fileName := strings.Trim(string(bufferFileName), ":")
 
-	fmt.Println("Recebendo arquivo " + fileName + " de tamanho " + strconv.FormatInt(fileSize, 10) + " bytes")
+	// Le a origem do arquivo
+	fileOrigin := strings.Trim(string(bufferFileOrigin), ":")
 
-	// File content
-	fmt.Println(bufferFileContent)
+	fmt.Println("Recebendo arquivo " + fileName + " de tamanho " + strconv.FormatInt(fileSize, 10) + " bytes do cliente: " + fileOrigin)
 
 	timestamp := time.Now().Format("20060102150405.000000")
-	uniqueFileName := string(timestamp[15:]) + fileName
+	uniqueFileName := timestamp + "_" + fileOrigin + "_" + fileName
 
 	newFile, err := os.Create("files/" + sanitizeFileName(uniqueFileName))
 	if err != nil {
