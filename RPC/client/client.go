@@ -2,14 +2,11 @@
 package main
 
 import (
-	"bufio"
-	"encoding/csv"
 	"fmt"
 	"io"
 	"net/rpc"
 	"os"
 	"strconv"
-	"time"
 )
 
 const (
@@ -31,41 +28,40 @@ type FileChunk struct {
 
 func main() {
 
-	for n := 0; n < 1000; n++ {
-		start := time.Now()
+	// start := time.Now()
 
-		// estabelece conexão
-		conn, err := rpc.Dial("tcp", ServerHost+":"+ServerPort)
-		if err != nil {
-			panic(err)
-		}
-
-		// envia dado
-		sendFileToClient(conn)
-
-		// recebe resposta do servidor
-		rep, err := bufio.NewReader(os.Stdin).ReadString('\n')
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(0)
-		}
-
-		fmt.Print(rep)
-
-		end := time.Since(start)
-		record := []string{strconv.FormatInt(end.Milliseconds(), 10)}
-
-		f, err := os.OpenFile("runlog.csv", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-		defer f.Close()
-
-		w := csv.NewWriter(f)
-		defer w.Flush()
-
-		w.Write(record)
-
-		// fecha conexão
-		defer conn.Close()
+	// estabelece conexão
+	conn, err := rpc.Dial("tcp", ServerHost+":"+ServerPort)
+	if err != nil {
+		panic(err)
 	}
+
+	// envia dado
+	sendFileToClient(conn)
+
+	// recebe resposta do servidor
+	// rep, err := bufio.NewReader(os.Stdin).ReadString('\n')
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	os.Exit(0)
+	// }
+
+	// fmt.Print(rep)
+
+	// end := time.Since(start)
+	// record := []string{strconv.FormatInt(end.Milliseconds(), 10)}
+
+	// f, err := os.OpenFile("runlog.csv", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	// defer f.Close()
+
+	// w := csv.NewWriter(f)
+	// defer w.Flush()
+
+	// w.Write(record)
+
+	// fecha conexão
+	defer conn.Close()
+
 }
 
 func sendFileToClient(conn *rpc.Client) {
@@ -115,15 +111,14 @@ func sendFileToClient(conn *rpc.Client) {
 			Data:     chunkBuffer[:n],
 		}
 
-		var reply bool
+		var reply string
+		// invoca operação remota do server ProcessRequestBytes
 		err = conn.Call("FileTransferService.ProcessRequestBytes", chunk, &reply)
 		if err != nil {
 			fmt.Println("Erro:", err)
 		}
 
-		if !reply {
-			fmt.Println("O servidor falhou em fazer o upload do arquivo.")
-		}
+		fmt.Println("Resposta: ", reply)
 
 		offset += int64(n)
 	}

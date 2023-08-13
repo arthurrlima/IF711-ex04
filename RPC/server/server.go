@@ -27,7 +27,7 @@ type FileChunk struct {
 
 type FileTransferService struct{}
 
-func (s *FileTransferService) ProcessRequestBytes(chunk FileChunk, reply *bool) error {
+func (s *FileTransferService) ProcessRequestBytes(chunk FileChunk, reply *string) error {
 
 	fmt.Println("Recebendo arquivo " + chunk.FileInfo.Filename + " de tamanho " + chunk.FileInfo.Size + " bytes")
 
@@ -49,7 +49,7 @@ func (s *FileTransferService) ProcessRequestBytes(chunk FileChunk, reply *bool) 
 
 	fmt.Println("Enviando dados do arquivo!")
 
-	*reply = true
+	*reply = "O arquivo foi recebido com sucesso!"
 	return nil
 }
 
