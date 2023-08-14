@@ -7,6 +7,7 @@ import (
 	"net/rpc"
 	"os"
 	"strconv"
+	"sync"
 )
 
 const (
@@ -14,6 +15,8 @@ const (
 	ServerPort = "1313"
 	BUFFERSIZE = 1024
 )
+
+var mu = sync.Mutex{}
 
 type FileData struct {
 	Filename string
@@ -29,28 +32,51 @@ type FileChunk struct {
 
 func main() {
 
-	if len(os.Args) < 2 {
+	var wg sync.WaitGroup
+
+	for n := 0; n < 80; n++ {
+		// Increment the WaitGroup counter.
+		wg.Add(1)
+		// Launch a goroutine to fetch the URL.
+		go func() {
+			// Decrement the counter when the goroutine completes.
+			defer wg.Done()
+			// Fetch the URL.
+			run(n)
+
+		}()
+	}
+	// Wait for all HTTP fetches to complete.
+	wg.Wait()
+
+}
+
+func run(clientId int) {
+
+	/*if len(os.Args) < 2 {
 		fmt.Println("Usage: ./client <value>")
 		return
-	}
+	}*/
 
-	arg := os.Args[1]
+	/*arg := os.Args[1]
 	value, err := strconv.Atoi(arg)
 	if err != nil {
 		fmt.Println("Invalid argument:", err)
 		return
-	}
+	}*/
 
 	// estabelece conexão
 	conn, err := rpc.Dial("tcp", ServerHost+":"+ServerPort)
 	if err != nil {
 		panic(err)
 	}
+
+	defer conn.Close()
 	// start := time.Now()
 	for n := 0; n < 1000; n++ {
 
 		// envia dado
-		sendFileToClient(conn, value)
+		sendFileToClient(conn, clientId)
 
 		// recebe resposta do servidor
 		// rep, err := bufio.NewReader(os.Stdin).ReadString('\n')
@@ -67,7 +93,7 @@ func main() {
 		// f, err := os.OpenFile("runlog.csv", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 		// defer f.Close()
 
-		// w := csv.NewWriter(f)
+		//w := csv.NewWriter(f)
 		// defer w.Flush()
 
 		// w.Write(record)
@@ -75,7 +101,7 @@ func main() {
 		// fecha conexão
 
 	}
-	defer conn.Close()
+
 }
 
 func sendFileToClient(conn *rpc.Client, value int) {
