@@ -19,7 +19,7 @@ const (
 func main() {
 
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: ./client <value>")
+		fmt.Println("Usage: ./client2 <value>")
 		return
 	}
 
@@ -100,7 +100,7 @@ func sendFileToServer(conn *net.UDPConn, value int) {
 
 	}
 
-	_, err = conn.Write([]byte(fileSize + fileName + fileOrigin + bufferString))
+	_, err = conn.Write([]byte(fileOrigin + fileSize + fileName + bufferString))
 	if err != nil {
 		fmt.Println("Erro no envio do tamanho e nome do arquivo para o servidor:", err.Error())
 		return

@@ -46,6 +46,7 @@ func main() {
 func processRequestBytes(conn net.Conn) {
 	bufferFileSize := make([]byte, 10)
 	bufferFileName := make([]byte, 64)
+	bufferFileOrigin := make([]byte, 64)
 
 	// Le o tamanho do arquivo
 	conn.Read(bufferFileSize)
@@ -55,10 +56,13 @@ func processRequestBytes(conn net.Conn) {
 	conn.Read(bufferFileName)
 	fileName := strings.Trim(string(bufferFileName), ":")
 
-	fmt.Println("Recebendo arquivo " + fileName + " de tamanho " + strconv.FormatInt(fileSize, 10) + " bytes")
+	// Le o numero do cliente
+	conn.Read(bufferFileOrigin)
+	fileOrigin := strings.Trim(string(bufferFileOrigin), ":")
+	fmt.Println("Recebendo arquivo " + fileName + " de tamanho " + strconv.FormatInt(fileSize, 10) + " bytes do cliente: " + fileOrigin)
 
 	timestamp := time.Now().Format("20060102150405.000000")
-	uniqueFileName := timestamp + "_" + fileName
+	uniqueFileName := timestamp + "_" + fileOrigin + "_" + fileName
 
 	newFile, err := os.Create("files/" + uniqueFileName)
 	if err != nil {
@@ -85,6 +89,4 @@ func processRequestBytes(conn net.Conn) {
 		os.Exit(0)
 	}
 
-	// fecha conexão
-	conn.Close()
 }

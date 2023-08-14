@@ -17,6 +17,19 @@ const (
 )
 
 func main() {
+
+	if len(os.Args) < 2 {
+		fmt.Println("Usage: ./client2 <value>")
+		return
+	}
+
+	arg := os.Args[1]
+	value, err := strconv.Atoi(arg)
+	if err != nil {
+		fmt.Println("Invalid argument:", err)
+		return
+	}
+
 	// estabelece conexão
 	conn, err := net.Dial("tcp", ServerHost+":"+ServerPort)
 	if err != nil {
@@ -24,9 +37,9 @@ func main() {
 	}
 
 	for n := 0; n < 1000; n++ {
-
+		fmt.Println("Inside loop iteration", n)
 		// envia dado
-		sendFileToClient(conn)
+		sendFileToClient(conn, value)
 
 		// recebe resposta do servidor
 		rep, err := bufio.NewReader(conn).ReadString('\n')
@@ -40,10 +53,10 @@ func main() {
 	}
 
 	// fecha conexão
-	defer conn.Close()
+	// defer conn.Close()
 }
 
-func sendFileToClient(conn net.Conn) {
+func sendFileToClient(conn net.Conn, value int) {
 
 	file, err := os.Open("arquivo.txt")
 	if err != nil {
@@ -59,6 +72,7 @@ func sendFileToClient(conn net.Conn) {
 
 	fileSize := fillString(strconv.FormatInt(fileInfo.Size(), 10), 10)
 	fileName := fillString(fileInfo.Name(), 64)
+	fileOrigin := fillString(strconv.Itoa(value), 64)
 
 	fmt.Println("Enviando nome e tamanho do arquivo!")
 
@@ -73,6 +87,11 @@ func sendFileToClient(conn net.Conn) {
 		fmt.Println("Erro no envio do nome do arquivo para o servidor:", err.Error())
 	}
 
+	_, err = conn.Write([]byte(fileOrigin))
+	if err != nil {
+		fmt.Println("Erro no envio do numero do cliente para o servidor:", err.Error())
+	}
+
 	sendBuffer := make([]byte, BUFFERSIZE)
 	fmt.Println("Inicio do upload do arquivo!")
 
@@ -83,7 +102,7 @@ func sendFileToClient(conn net.Conn) {
 		}
 		conn.Write(sendBuffer)
 	}
-	fmt.Println("O upload do arquivo foi concluido! Fechando conexão...")
+	fmt.Println("O upload do arquivo foi concluido!")
 
 }
 

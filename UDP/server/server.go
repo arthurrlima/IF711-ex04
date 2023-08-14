@@ -57,9 +57,9 @@ func main() {
 }
 
 func processRequestBytes(conn *net.UDPConn, msgFromClient []byte, n int, addr *net.UDPAddr) {
-	bufferFileSize := msgFromClient[:10]
-	bufferFileName := msgFromClient[10:64]
-	bufferFileOrigin := msgFromClient[64:74]
+	bufferFileOrigin := msgFromClient[:10]
+	bufferFileSize := msgFromClient[10:20]
+	bufferFileName := msgFromClient[20:74]
 	bufferFileContent := msgFromClient[74:]
 
 	// Le o tamanho do arquivo
