@@ -34,9 +34,10 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	for n := 0; n < 80; n++ {
+	for n := 0; n < 40; n++ {
 		// Increment the WaitGroup counter.
 		wg.Add(1)
+		n := n
 		// Launch a goroutine to fetch the URL.
 		go func() {
 			// Decrement the counter when the goroutine completes.
