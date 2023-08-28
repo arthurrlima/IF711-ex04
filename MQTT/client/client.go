@@ -8,6 +8,11 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
+type Data interface {
+	Bytes() []byte
+	Content() string
+}
+
 func main() {
 	brokerAddress := "localhost:1883" // Change this to your broker's address
 	topic := "file_upload_topic"      // Change this to the desired topic
@@ -42,9 +47,13 @@ func main() {
 	}
 	defer client.Disconnect(250)
 
+	for i := 0; i < 10000; i++ {
+		// Publish the file content to the topic
+		token := client.Publish(topic, 0, false, fileBytes)
+		token.Wait()
+	}
+
 	// Publish the file content to the topic
-	token := client.Publish(topic, 0, false, fileBytes)
-	token.Wait()
 
 	fmt.Println("File sent to server via MQTT.")
 }

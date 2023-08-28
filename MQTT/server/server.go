@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
@@ -22,8 +23,9 @@ func onMessageReceived(client mqtt.Client, msg mqtt.Message) {
 	topic := msg.Topic()
 	fileContent := msg.Payload()
 
+	timestamp := time.Now().Format("20060102150405.000000")
 	// Save the received content to a file
-	err := saveToFile("files/received_file.txt", fileContent)
+	err := saveToFile("files/"+timestamp+"_"+"received_file.txt", fileContent)
 	if err != nil {
 		fmt.Println("Error saving file:", err)
 		return
@@ -49,8 +51,7 @@ func main() {
 	defer client.Disconnect(250)
 
 	// Subscribe to the topic
-	token := client.Subscribe(topic, 0, onMessageReceived)
-	token.Wait()
+	go client.Subscribe(topic, 0, onMessageReceived)
 
 	fmt.Println("Server is listening for incoming files via MQTT.")
 	select {} // Keep the server running
