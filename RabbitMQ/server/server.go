@@ -41,8 +41,9 @@ func receiveFile(conn *amqp.Connection, channel *amqp.Channel) {
 	for message := range messages {
 		// Save the file to a directory.
 		filename := message.Body
+		clientId := message.MessageId
 		count++
-		file, err := os.Create("files/" + string(filename) + "_" + fmt.Sprintf("%d", count) + ".txt")
+		file, err := os.Create("files/" + string(filename) + "_" + clientId + "_" + ".txt")
 		if err != nil {
 			fmt.Println(err)
 			return

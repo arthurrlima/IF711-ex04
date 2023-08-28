@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"sync"
+	"strconv"
 
 	"github.com/streadway/amqp"
 )
 
-func sendFile(conn *amqp.Connection, channel *amqp.Channel, clientID int) {
+func sendFile(conn *amqp.Connection, channel *amqp.Channel, clientID int, fileID int) {
 
 	file, err := os.Open("arquivo.txt")
 	if err != nil {
@@ -47,6 +47,7 @@ func sendFile(conn *amqp.Connection, channel *amqp.Channel, clientID int) {
 		false,  // immediate
 		amqp.Publishing{
 			ContentType: "text/plain",
+			MessageId:   fmt.Sprintf("%d", clientID) + "_" + fmt.Sprintf("%d", fileID),
 			Body:        fileBytes,
 		},
 	)
@@ -59,11 +60,19 @@ func sendFile(conn *amqp.Connection, channel *amqp.Channel, clientID int) {
 
 func main() {
 
-	var wg sync.WaitGroup
-	numClients := 10000
+	if len(os.Args) < 2 {
+		fmt.Println("Usage: ./client <value>")
+		return
+	}
+
+	arg := os.Args[1]
+	value, err := strconv.Atoi(arg)
+	if err != nil {
+		fmt.Println("Invalid argument:", err)
+		return
+	}
 
 	// Create a wait group to synchronize goroutines
-	wg.Add(numClients)
 
 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
 	if err != nil {
@@ -76,13 +85,11 @@ func main() {
 	}
 	defer ch.Close()
 
-	for i := 0; i < numClients; i++ {
-		go func(clientID int) {
-			defer wg.Done()
-			sendFile(conn, ch, clientID)
-		}(i)
+	for i := 0; i < 10000; i++ {
+
+		sendFile(conn, ch, value, i)
+
 	}
 
-	// Wait for all goroutines to finish
-	wg.Wait()
+	// Wait for all goroutines to finis
 }
