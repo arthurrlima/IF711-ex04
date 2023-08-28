@@ -90,6 +90,4 @@ func main() {
 		sendFile(conn, ch, value, i)
 
 	}
-
-	// Wait for all goroutines to finis
 }
