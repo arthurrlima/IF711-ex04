@@ -4,13 +4,44 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/streadway/amqp"
 )
 
-func receiveFile(conn *amqp.Connection, channel *amqp.Channel) {
-	// Create a queue to receive files.
-	q, err := channel.QueueDeclare(
+func receiveFile(content amqp.Delivery, count int) {
+
+	clientId := content.MessageId
+
+	timestamp := time.Now().Format("20060102150405.000000")
+	uniqueFileName := timestamp + "_" + clientId + "_" + "arquivo.txt"
+
+	file, err := os.Create("files/" + uniqueFileName)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	defer file.Close()
+
+	file.Write(content.Body)
+
+}
+
+func main() {
+	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	if err != nil {
+		log.Fatal("Error connecting to RabbitMQ:", err)
+	}
+	defer conn.Close()
+
+	ch, err := conn.Channel()
+	if err != nil {
+		log.Fatal("Error opening channel:", err)
+	}
+	defer ch.Close()
+
+	q, err := ch.QueueDeclare(
 		"file_queue", // queue name
 		false,        // durable
 		false,        // delete when unused
@@ -23,7 +54,7 @@ func receiveFile(conn *amqp.Connection, channel *amqp.Channel) {
 	}
 
 	// Consume messages from the queue
-	messages, err := channel.Consume(
+	messages, err := ch.Consume(
 		q.Name, // queue name
 		"",     // consumer
 		true,   // auto-ack
@@ -40,36 +71,10 @@ func receiveFile(conn *amqp.Connection, channel *amqp.Channel) {
 
 	for message := range messages {
 		// Save the file to a directory.
-		filename := message.Body
-		clientId := message.MessageId
-		count++
-		file, err := os.Create("files/" + string(filename) + "_" + clientId + "_" + ".txt")
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
+		fmt.Println("Waiting for messages...")
 
-		defer file.Close()
+		go receiveFile(message, count)
 
-		file.Write(message.Body)
 	}
-}
-
-func main() {
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-	if err != nil {
-		log.Fatal("Error connecting to RabbitMQ:", err)
-	}
-	defer conn.Close()
-
-	ch, err := conn.Channel()
-	if err != nil {
-		log.Fatal("Error opening channel:", err)
-	}
-	defer ch.Close()
-
-	fmt.Println("Waiting for messages...")
-
-	receiveFile(conn, ch)
 
 }
