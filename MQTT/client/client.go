@@ -4,24 +4,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sync"
 
-	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/streadway/amqp"
 )
 
-func main() {
-	opts := mqtt.NewClientOptions()
-	opts.AddBroker("tcp://localhost:1883")
-	opts.SetClientID("mqtt_client")
+func sendFile(conn *amqp.Connection, channel *amqp.Channel, clientID int) {
 
-	client := mqtt.NewClient(opts)
-	if token := client.Connect(); token.Wait() && token.Error() != nil {
-		log.Fatal(token.Error())
-	}
-
-	topic := "file_topic"
-	filePath := "arquivo.txt"
-
-	file, err := os.Open(filePath)
+	file, err := os.Open("arquivo.txt")
 	if err != nil {
 		log.Fatal("Error opening the file:", err)
 	}
@@ -37,10 +27,62 @@ func main() {
 	if err != nil {
 		log.Fatal("Error reading the file:", err)
 	}
+	q, err := channel.QueueDeclare(
+		"file_queue", // queue name
+		false,        // durable
+		false,        // delete when unused
+		false,        // exclusive
+		false,        // no-wait
+		nil,          // arguments
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	token := client.Publish(topic, 0, false, fileBytes)
-	token.Wait()
+	// Publish the file content to the queue
+	err = channel.Publish(
+		"",     // exchange
+		q.Name, // routing key
+		false,  // mandatory
+		false,  // immediate
+		amqp.Publishing{
+			ContentType: "text/plain",
+			Body:        fileBytes,
+		},
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	client.Disconnect(500)
-	fmt.Println("File sent:", filePath)
+	fmt.Println("File sent to server")
+}
+
+func main() {
+
+	var wg sync.WaitGroup
+	numClients := 10000
+
+	// Create a wait group to synchronize goroutines
+	wg.Add(numClients)
+
+	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	ch, err := conn.Channel()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer ch.Close()
+
+	for i := 0; i < numClients; i++ {
+		go func(clientID int) {
+			defer wg.Done()
+			sendFile(conn, ch, clientID)
+		}(i)
+	}
+
+	// Wait for all goroutines to finish
+	wg.Wait()
 }

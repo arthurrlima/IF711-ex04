@@ -10,22 +10,39 @@ import (
 
 func receiveFile(conn *amqp.Connection, channel *amqp.Channel) {
 	// Create a queue to receive files.
-	q, err := channel.QueueDeclare("myqueue", false, false, false, false, nil)
+	q, err := channel.QueueDeclare(
+		"file_queue", // queue name
+		false,        // durable
+		false,        // delete when unused
+		false,        // exclusive
+		false,        // no-wait
+		nil,          // arguments
+	)
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Fatal(err)
 	}
-	// Consume messages from the queue.
-	messages, err := channel.Consume(q.Name, "", false, false, false, false, nil)
+
+	// Consume messages from the queue
+	messages, err := channel.Consume(
+		q.Name, // queue name
+		"",     // consumer
+		true,   // auto-ack
+		false,  // exclusive
+		false,  // no-local
+		false,  // no-wait
+		nil,    // args
+	)
 	if err != nil {
-		fmt.Println(err)
-		return
+		log.Fatal(err)
 	}
+
+	count := 0
 
 	for message := range messages {
 		// Save the file to a directory.
 		filename := message.Body
-		file, err := os.Create("files/" + string(filename))
+		count++
+		file, err := os.Create("files/" + string(filename) + "_" + fmt.Sprintf("%d", count) + ".txt")
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -52,7 +69,6 @@ func main() {
 
 	fmt.Println("Waiting for messages...")
 
-	fmt.Println(ch)
 	receiveFile(conn, ch)
 
 }
