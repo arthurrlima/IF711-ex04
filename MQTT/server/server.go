@@ -2,73 +2,56 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 
-	"github.com/streadway/amqp"
+	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
-func receiveFile(conn *amqp.Connection, channel *amqp.Channel) {
-	// Create a queue to receive files.
-	q, err := channel.QueueDeclare(
-		"file_queue", // queue name
-		false,        // durable
-		false,        // delete when unused
-		false,        // exclusive
-		false,        // no-wait
-		nil,          // arguments
-	)
+func saveToFile(filename string, content []byte) error {
+	file, err := os.Create(filename)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+	defer file.Close()
 
-	// Consume messages from the queue
-	messages, err := channel.Consume(
-		q.Name, // queue name
-		"",     // consumer
-		true,   // auto-ack
-		false,  // exclusive
-		false,  // no-local
-		false,  // no-wait
-		nil,    // args
-	)
+	_, err = file.Write(content)
+	return err
+}
+
+func onMessageReceived(client mqtt.Client, msg mqtt.Message) {
+	topic := msg.Topic()
+	fileContent := msg.Payload()
+
+	// Save the received content to a file
+	err := saveToFile("files/received_file.txt", fileContent)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("Error saving file:", err)
+		return
 	}
 
-	count := 0
-
-	for message := range messages {
-		// Save the file to a directory.
-		filename := message.Body
-		count++
-		file, err := os.Create("files/" + string(filename) + "_" + fmt.Sprintf("%d", count) + ".txt")
-		if err != nil {
-			fmt.Println(err)
-			return
-		}
-
-		defer file.Close()
-
-		file.Write(message.Body)
-	}
+	fmt.Println("File saved:", topic)
 }
 
 func main() {
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-	if err != nil {
-		log.Fatal("Error connecting to RabbitMQ:", err)
+	brokerAddress := "localhost:1883" // Change this to your broker's address
+	topic := "file_upload_topic"      // Change this to the desired topic
+
+	// Set up MQTT client options
+	opts := mqtt.NewClientOptions()
+	opts.AddBroker(brokerAddress)
+	client := mqtt.NewClient(opts)
+
+	// Connect to the broker
+	if token := client.Connect(); token.Wait() && token.Error() != nil {
+		fmt.Println("Error connecting to MQTT broker:", token.Error())
+		return
 	}
-	defer conn.Close()
+	defer client.Disconnect(250)
 
-	ch, err := conn.Channel()
-	if err != nil {
-		log.Fatal("Error opening channel:", err)
-	}
-	defer ch.Close()
+	// Subscribe to the topic
+	token := client.Subscribe(topic, 0, onMessageReceived)
+	token.Wait()
 
-	fmt.Println("Waiting for messages...")
-
-	receiveFile(conn, ch)
-
+	fmt.Println("Server is listening for incoming files via MQTT.")
+	select {} // Keep the server running
 }
