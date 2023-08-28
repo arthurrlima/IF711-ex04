@@ -101,6 +101,4 @@ func main() {
 
 		w.Write(record)
 	}
-
-	// Wait for all goroutines to finis
 }
