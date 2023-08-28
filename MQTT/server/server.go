@@ -50,9 +50,11 @@ func main() {
 	}
 	defer client.Disconnect(250)
 
-	// Subscribe to the topic
-	go client.Subscribe(topic, 0, onMessageReceived)
+	for {
+		fmt.Println("Server is listening for incoming files via MQTT.")
+		// Subscribe to the topic
+		go client.Subscribe(topic, 0, onMessageReceived)
+	}
 
-	fmt.Println("Server is listening for incoming files via MQTT.")
 	select {} // Keep the server running
 }
